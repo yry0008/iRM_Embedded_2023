@@ -148,4 +148,4 @@ Follow the steps below to debug an executable
 
 4. Make sure you have created a [personal access token](https://docs.github.com/en/authentication/keeping-your-account-and-data-secure/creating-a-personal-access-token).
    
-5. Create a new branch from main and make all of your changes in that branch. After pushing it to the remote repository, create a pull request and assign at least one reviewer. After one reviewer approves your changes, your code can be merged to main. Learn more about pull requests [here](https://docs.github.com/en/pull-requests/collaborating-with-pull-requests/proposing-changes-to-your-work-with-pull-requests/about-pull-requests).
+5. Create a new branch from main and make all of your changes in that branch. After pushing it to the remote repository, create a pull request and assign at least one reviewer. After one reviewer approves your changes, your code can be merged to main. Learn more about pull requests [here](https://docs.github.com/en/pull-requests/collaborating-with-pull-requests/proposing-changes-to-your-work-with-pull-requests/about-pull-requests).   
