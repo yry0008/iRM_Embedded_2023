@@ -297,7 +297,7 @@ void KillAll() {
   }
 }
 
-static bool debug = false;
+static bool debug = true;
 
 void RM_RTOS_Default_Task(const void* args) {
   UNUSED(args);
@@ -310,8 +310,10 @@ void RM_RTOS_Default_Task(const void* args) {
     if (debug) {
       set_cursor(0, 0);
       clear_screen();
-      print("vx: %f, vy: %f, angle: %f, mode: %f, dead: %f\r\n", receive->vx, receive->vy,
-            receive->relative_angle, receive->mode, receive->dead);
+//      print("vx: %f, vy: %f, angle: %f, mode: %f, dead: %f\r\n", receive->vx, receive->vy,
+//            receive->relative_angle, receive->mode, receive->dead);
+      print("Power limit: %f   Curr Power: %f \n",
+            (float)referee->game_robot_status.chassis_power_limit, referee->power_heat_data.chassis_power);
     }
     osDelay(DEFAULT_TASK_DELAY);
   }
