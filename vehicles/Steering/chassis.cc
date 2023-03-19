@@ -169,7 +169,7 @@ void chassisTask(void* arg) {
     chassis->SetYSpeed(-vx_set / 10);
     chassis->SetXSpeed(-vy_set / 10);
     chassis->SetWSpeed(wz_set);
-    chassis->Update((float)referee->game_robot_status.chassis_power_limit,
+    chassis->Update(80.0,
                     referee->power_heat_data.chassis_power,
                     (float)referee->power_heat_data.chassis_power_buffer);
 
