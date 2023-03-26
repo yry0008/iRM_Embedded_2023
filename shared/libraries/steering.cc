@@ -298,19 +298,19 @@ void SteeringChassis::SteerSetMaxSpeed(const float max_speed) {
   br_steer_motor->SetMaxSpeed(max_speed);
 }
 
-void SteeringChassis::SteerCalcOutput() {
-  fl_steer_motor->CalcOutput();
-  fr_steer_motor->CalcOutput();
-  bl_steer_motor->CalcOutput();
-  br_steer_motor->CalcOutput();
-}
-
-void SteeringChassis::SteerSetMaxSpeed(const float max_speed) {
-  fl_steer_motor->SetMaxSpeed(max_speed);
-  fr_steer_motor->SetMaxSpeed(max_speed);
-  bl_steer_motor->SetMaxSpeed(max_speed);
-  br_steer_motor->SetMaxSpeed(max_speed);
-}
+//void SteeringChassis::SteerCalcOutput() {
+//  fl_steer_motor->CalcOutput();
+//  fr_steer_motor->CalcOutput();
+//  bl_steer_motor->CalcOutput();
+//  br_steer_motor->CalcOutput();
+//}
+//
+//void SteeringChassis::SteerSetMaxSpeed(const float max_speed) {
+//  fl_steer_motor->SetMaxSpeed(max_speed);
+//  fr_steer_motor->SetMaxSpeed(max_speed);
+//  bl_steer_motor->SetMaxSpeed(max_speed);
+//  br_steer_motor->SetMaxSpeed(max_speed);
+//}
 
 
 void SteeringChassis::PrintData() {

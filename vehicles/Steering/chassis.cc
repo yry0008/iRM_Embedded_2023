@@ -46,9 +46,14 @@ static const int KILLALL_DELAY = 100;
 static const int DEFAULT_TASK_DELAY = 100;
 static const int CHASSIS_TASK_DELAY = 2;
 
-constexpr float RUN_SPEED = (10 * PI) / 32;
+//constexpr float RUN_SPEED = (10 * PI) / 32;
 // constexpr float ALIGN_SPEED = (PI);
+//constexpr float ACCELERATION = (100 * PI);
+
+constexpr float RUN_SPEED = (4 * PI);
+constexpr float ALIGN_SPEED = (PI);
 constexpr float ACCELERATION = (100 * PI);
+constexpr float WHEEL_SPEED = 200;
 
 //==================================================================================================
 // Referee
@@ -129,6 +134,8 @@ static bsp::GPIO* pe4 = nullptr;
 static control::steering_chassis_t* chassis_data;
 static control::SteeringChassis* chassis;
 
+remote::DBUS* dbus = nullptr;
+
 static const float CHASSIS_DEADZONE = 0.04;
 
 bool steering_align_detect1() { return pe1->Read() == 0; }
@@ -145,42 +152,77 @@ void chassisTask(void* arg) {
   control::MotorCANBase* steer_motors[] = {motor1, motor2, motor3, motor4};
   control::MotorCANBase* wheel_motors[] = {motor5, motor6, motor7, motor8};
 
-  float spin_speed = 10;
-  float follow_speed = 10;
+  control::PIDController pid5(120, 15, 30);
+  control::PIDController pid6(120, 15, 30);
+  control::PIDController pid7(120, 15, 30);
+  control::PIDController pid8(120, 15, 30);
 
-  while (!receive->start) osDelay(100);
+  osDelay(500);  // DBUS initialization needs time
 
-  while (receive->start < 0.5) osDelay(100);
+  double vx = 0.0;
+  double vy = 0.0;
+  double vw = 0.0;
+
+  float v5 = 0;
+  float v6 = 0;
+  float v7 = 0;
+  float v8 = 0;
+
+  bool alignment = false;
 
   while (true) {
-    float relative_angle = receive->relative_angle;
-    float sin_yaw, cos_yaw, vx_set, vy_set, wz_set;
-    UNUSED(wz_set);
+    vx = -static_cast<double>(dbus->ch0) / 660;
+    vy = static_cast<double>(dbus->ch1) / 660;
+//    vw = static_cast<double>(dbus->ch0) / 660;
 
-    vx_set = receive->vx;
-    vy_set = receive->vy;
-
-    if (receive->mode == 1) {  // spin mode
-      sin_yaw = arm_sin_f32(relative_angle);
-      cos_yaw = arm_cos_f32(relative_angle);
-      vx_set = cos_yaw * vx_set + sin_yaw * vy_set;
-      vy_set = -sin_yaw * vx_set + cos_yaw * vy_set;
-      wz_set = spin_speed;
-    } else {
-      sin_yaw = arm_sin_f32(relative_angle);
-      cos_yaw = arm_cos_f32(relative_angle);
-      vx_set = cos_yaw * vx_set + sin_yaw * vy_set;
-      vy_set = -sin_yaw * vx_set + cos_yaw * vy_set;
-      wz_set = std::min(follow_speed, follow_speed * relative_angle);
-      if (-CHASSIS_DEADZONE < relative_angle && relative_angle < CHASSIS_DEADZONE) wz_set = 0;
+    // Kill switch
+    if (dbus->swl == remote::UP || dbus->swl == remote::DOWN) {
+      RM_ASSERT_TRUE(false, "Operation killed");
     }
 
-    chassis->SetYSpeed(-vx_set / 10);
-    chassis->SetXSpeed(-vy_set / 10);
-    chassis->SetWSpeed(wz_set);
-    chassis->Update((float)referee->game_robot_status.chassis_power_limit,
-                    referee->power_heat_data.chassis_power,
-                    (float)referee->power_heat_data.chassis_power_buffer);
+    // Only Calibrate once per Switch change
+    if (dbus->swr != remote::UP) {
+      alignment = false;
+    }
+    // Right Switch Up to start a calibration
+    if (dbus->swr == remote::UP && alignment == false) {
+      chassis->SteerSetMaxSpeed(ALIGN_SPEED);
+      bool alignment_complete = false;
+      while (!alignment_complete) {
+        chassis->SteerCalcOutput();
+        control::MotorCANBase::TransmitOutput(steer_motors, 4);
+        alignment_complete = chassis->Calibrate();
+        osDelay(1);
+      }
+      chassis->ReAlign();
+      alignment = true;
+      chassis->SteerSetMaxSpeed(RUN_SPEED);
+      chassis->SteerThetaReset();
+
+      v5 = 0;
+      v6 = 0;
+      v7 = 0;
+      v8 = 0;
+      chassis->SetWheelSpeed(0,0,0,0);
+    } else {
+      chassis->SetSpeed(vx, vy, vw);
+      chassis->SteerUpdateTarget();
+      chassis->WheelUpdateSpeed(WHEEL_SPEED);
+      v5 = chassis->v_bl_;
+      v6 = chassis->v_br_;
+      v7 = chassis->v_fr_;
+      v8 = chassis->v_fl_;
+    }
+
+
+
+    chassis->SteerCalcOutput();
+
+    motor5->SetOutput(pid5.ComputeConstrainedOutput(motor5->GetOmegaDelta(v5)));
+    motor6->SetOutput(pid6.ComputeConstrainedOutput(motor6->GetOmegaDelta(v6)));
+    motor7->SetOutput(pid7.ComputeConstrainedOutput(motor7->GetOmegaDelta(v7)));
+    motor8->SetOutput(pid8.ComputeConstrainedOutput(motor8->GetOmegaDelta(v8)));
+
 
     if (Dead) {
       motor5->SetOutput(0);
@@ -248,6 +290,8 @@ void RM_RTOS_Init() {
   pe4 = new bsp::GPIO(IN4_GPIO_Port, IN4_Pin);
 
   chassis_data = new control::steering_chassis_t();
+
+  dbus = new remote::DBUS(&huart3);
 
   control::steering_t steering_motor_data;
   steering_motor_data.motor = motor1;
